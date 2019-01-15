@@ -17,6 +17,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,6 +27,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,15 +35,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        final TextView mTextView = (TextView) findViewById(R.id.textViewResults);
-        mTextView.setMovementMethod(new ScrollingMovementMethod());
+        final TextView cardNameTextView = (TextView) findViewById(R.id.cardNameTextView);
+        final TextView setDataTextView=(TextView) findViewById(R.id.setDataTextView);
+        setDataTextView.setMovementMethod(new ScrollingMovementMethod());
         final Context context=getApplicationContext();
-        final String filename="cardname.txt";
-        mTextView.setText("Caricamento...");
         ////
         //if Cardname.txt doesn't exit, create it and populate it.
         //Fetch the card list
-        File file = context.getFileStreamPath(filename);
+        /*File file = context.getFileStreamPath(filename);
         if(file == null || !file.exists()) {
             //Create the file
             Log.d("URLResponse", "Creating the file");
@@ -79,8 +80,8 @@ public class MainActivity extends AppCompatActivity {
                     }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-                    mTextView.setText("That didn't work!");
-                    Log.d("URLResponse", "That didn't work!");
+                    mTextView.setText("File writing didn't work!");
+                    Log.d("URLResponse", "File writing didn't work!");
                 }
             });
             // Add the request to the RequestQueue.
@@ -88,15 +89,12 @@ public class MainActivity extends AppCompatActivity {
             Log.d("URLResponseQueue",queue.toString());
         }//if
         Log.d("URLResponseFile","Reading the file!");
-        StringBuilder text = new StringBuilder();
         ArrayList<String> cardsArrayList=new ArrayList<>();
         try {
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
             while ((line = br.readLine()) != null) {
                 cardsArrayList.add(line+"\n");
-                //text.append(line);
-                //text.append('\n');
             }
             br.close();
         }
@@ -105,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         }
         //mTextView.setText(text.toString());
         mTextView.setText(cardsArrayList.toString().substring(1,cardsArrayList.toString().length()-1).replace(",",""));
-        Log.d("URLResponsePrin","Printed");
+        Log.d("URLResponsePrin","Printed");*/
         //SEARCH MODULE
         //TODO: search in the arraylist, then show all the results, for each expansion.
         //https://scryfall.com/search?q=cardname
@@ -114,27 +112,68 @@ public class MainActivity extends AppCompatActivity {
         final EditText query=(EditText) findViewById(R.id.editTextSearch);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Log.d("URLResponse","click: "+query.getText().toString());
+                Log.d("URLResponse","Search for \""+query.getText().toString()+"\"");
                 if(!(query.getText().toString().isEmpty())){
+                    /*String cardName=query.getText().toString(); //TODO: Completare il nome della carta!
+                    Log.d("URLResponseCardInput",cardName);
+                    String cardURI=cardNameToUri(context,cardName);
+                    Log.d("URLResponseURIFunction",cardURI);
+                   // ArrayList<String> rows=uriToPrintings(context,cardURI);
+                    mTextView.setText(cardName+"; "+cardURI);*/
                     //Search for the card
-                    RequestQueue queue = Volley.newRequestQueue(context);//TODO: il context è giusto?
+                    RequestQueue queue = Volley.newRequestQueue(context);
                     String url = "https://api.scryfall.com/cards/named?fuzzy="+query.getText().toString().replace(" ","+");
                     // Request a string response from the provided URL.
                     StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                             new Response.Listener<String>() {
                                 @Override
                                 public void onResponse(String response) {
-                                    //mTextView.setText("Response is: "+ response.substring(0,500));
-                                    //Log.d("URLResponse", response.substring(0,50));
                                     try {
                                         JSONObject reader = new JSONObject(response);
                                         String name = reader.getString("name");
                                         String versionsURI = reader.getString("prints_search_uri");
                                         //TODO: Edit here
-                                        RequestQueue queue = Volley.newRequestQueue(context);//TODO: il context è giusto?
-                                        String url = versionsURI;
+                                        RequestQueue queue = Volley.newRequestQueue(context);
+                                        if(!(versionsURI.isEmpty())){
+                                            RequestQueue queueURI = Volley.newRequestQueue(context);
+                                            String url = versionsURI;
+                                            StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                                                    new Response.Listener<String>() {
+                                                        @Override
+                                                        public void onResponse(String response) {
+                                                            try {
+                                                                JSONObject reader = new JSONObject(response);
+                                                                int cardsNumber = Integer.parseInt(reader.getString("total_cards"));
+                                                                Log.d("URLResponse","Edizioni trovate:"+ cardsNumber);
+                                                                JSONArray data = (JSONArray) reader.get("data");
+                                                                String setData="";
+                                                                for(int i=0;i<cardsNumber;i++){
+                                                                    //data.getJSONObject(i);
+                                                                    try {
+                                                                        setData += data.getJSONObject(i).getString("set_name") + " : " + data.getJSONObject(i).getString("eur") + "€" + "\n";
+                                                                    }catch(JSONException e){
+                                                                        setData += data.getJSONObject(i).getString("set_name") + " : " + "Prezzo non disponibile" + "\n";
+                                                                        Log.d("URLResponseError",e.toString());
+                                                                    }
+                                                                }
+                                                                Log.d("URLResponseJSONObject",setData);
+                                                                setDataTextView.setText(setData);
+                                                                RequestQueue queue = Volley.newRequestQueue(context);
+                                                            } catch (JSONException e) {
+                                                                Log.d("URLResponse", e.toString());
+                                                            }
+                                                        }
+                                                    }, new Response.ErrorListener() {
+                                                @Override
+                                                public void onErrorResponse(VolleyError error) {
+                                                    Log.d("URLResponse", "cardsNumber didn't work!");
+                                                }
+                                            });
+                                            // Add the request to the RequestQueue.
+                                            queueURI.add(stringRequest);
+                                        }//if
                                         Log.d("URLResponseJson",name+" , "+versionsURI);
-                                        mTextView.setText(name+"\n");
+                                        cardNameTextView.setText(name);
                                     } catch (JSONException e) {
                                         Log.d("URLResponse", e.toString());
                                     }
@@ -142,7 +181,6 @@ public class MainActivity extends AppCompatActivity {
                             }, new Response.ErrorListener() {
                         @Override
                         public void onErrorResponse(VolleyError error) {
-                            mTextView.setText("That didn't work!");
                             Log.d("URLResponse", "That didn't work!");
                         }
                     });
@@ -152,4 +190,85 @@ public class MainActivity extends AppCompatActivity {
             }//onClick
         });
     }//onCreate
-}
+
+    /**
+     * Method that returns an scryfall uri "prints_search_uri" to find the other printings
+     * @param context the context
+     * @param cardName the name of the card
+     * @return a string containing the uri
+     */
+    private String cardNameToUri(final Context context, String cardName){
+        final String[] cardUri = {""};
+        RequestQueue queue = Volley.newRequestQueue(context);//TODO: il context è giusto?
+        String url = "https://api.scryfall.com/cards/named?fuzzy="+cardName.replace(" ","+");
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        //mTextView.setText("Response is: "+ response.substring(0,500));
+                        //Log.d("URLResponse", response.substring(0,50));
+                        try {
+                            JSONObject reader = new JSONObject(response);
+                            String name = reader.getString("name");
+                            String versionsURI = reader.getString("prints_search_uri");
+                            RequestQueue queue = Volley.newRequestQueue(context);
+                            //TODO: Il problema è qua, non ritorna l'URI
+                            cardUri[0] = versionsURI;
+                            Log.d("URLResponseJson",name+" , "+versionsURI+"; "+cardUri[0]);
+                        } catch (JSONException e) {
+                            Log.d("URLResponse", e.toString());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("URLResponse", "cardNameToUri didn't work!");
+            }
+        });
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest);
+        Log.d("URLResponseJsonURI2",cardUri[0]);
+        return cardUri[0];
+    }//cardNameToUri
+
+    /**
+     * Method that returns an array containing a string wich is the concatenation of: card set and card price in euros.
+     * @param context the context
+     * @param cardUri the uri of the card
+     * @return an array of strings containing information about the other printings
+     */
+    private ArrayList<String> uriToPrintings(final Context context, final String cardUri){
+        ArrayList<String> rows=new ArrayList<>();
+        RequestQueue queue = Volley.newRequestQueue(context);//TODO: il context è giusto?
+        String url = cardUri;
+        // Request a string response from the provided URL.
+        Log.d("URLResponseURI","Sto provando ");
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject reader = new JSONObject(response);
+                            String totalCards = reader.getString("total_cards");
+                            Log.d("URLResponseURItoPrint","Trovate "+totalCards+" carte");
+                            String versionsURI = reader.getString("prints_search_uri");
+                            //TODO: Edit here
+                            RequestQueue queue = Volley.newRequestQueue(context);//TODO: il context è giusto?
+
+                            //Log.d("URLResponseJson",name+" , "+versionsURI);
+                        } catch (JSONException e) {
+                            Log.d("URLResponse", e.toString());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("URLResponse", "uriToPrintings didn't work!");
+            }
+        });
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest);
+        return rows;
+    }//uriToPrintings
+}//MainActivity
