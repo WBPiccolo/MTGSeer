@@ -18,13 +18,18 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.bumptech.glide.Glide;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.NoSuchElementException;
 
 public class CardViewerActivity extends AppCompatActivity {
     @Override
@@ -37,7 +42,7 @@ public class CardViewerActivity extends AppCompatActivity {
         final TextView cardTypeTW=(TextView)findViewById(R.id.CardTypeTW);
         final TextView cardEffectsTW=(TextView)findViewById(R.id.CardEffetcsTW);
         final TextView cardPrintingsTW=(TextView)findViewById(R.id.CardPrintingsTW);
-        final ImageView cardImageView =(ImageView)findViewById(R.id.ImageView);
+        final ImageView cardImageView =(ImageView)findViewById(R.id.ImageTW);
         Intent intent = getIntent();
         String cardID = intent.getStringExtra(MainActivity.EXTRA_MESSAGE);
         //Given the cardID, the card's data are at "https://api.scryfall.com/cards/" + "cardID"
@@ -62,14 +67,35 @@ public class CardViewerActivity extends AppCompatActivity {
                             Log.d("URLResponse",cardName);
                             Log.d("URLResponseImageUris",reader.getString("image_uris"));
                             Log.d("URLResponseImageNormal",reader.getJSONObject("image_uris").getString("art_crop"));
-                            cardImageView.setImageURI(Uri.parse(imageUri));//TODO: SISTEMARLO
-
+                            Glide.with(context).load(imageUri).into(cardImageView);
+                            String oracleText="";
+                            String flavorText="";
+                            String pt="";
+                            String loyalty="";
                             //TODO: Divide oracle text from flavour text, artist and P/T
-                            String oracleText=reader.getString("oracle_text");
-                            String flavorText=reader.getString("flavor_text");
+                            try{////IT MAY NOT HAVE AN EFFECT TEXT
+                                oracleText=reader.getString("oracle_text");
+                            }
+                            catch(JSONException e){
+                                    e.printStackTrace();
+                            }
+                            try {//IT MAY NOT HAVE A FLAVOR TEXT
+                                 flavorText = reader.getString("flavor_text");
+                            }catch(JSONException e){
+                                e.printStackTrace();
+                            }
                             String artist=reader.getString("artist");
-                            String pt=reader.getString("power")+"/"+reader.getString("toughness");//TODO: Gestire l'eccezione se non è una creatura
-                            cardEffectsTW.setText(oracleText+"\n\n"+flavorText+"\n"+artist+"  "+pt);
+                            try {//IT MAY NOT BE A CREATURE
+                                pt += reader.getString("power") + "/" + reader.getString("toughness");
+                            }catch(JSONException e){
+                                e.printStackTrace();
+                            }
+                            try{//IT MAY NOT BE A PLANESWALKER
+                                loyalty=reader.getString("loyalty");
+                            }catch(JSONException e){
+                                e.printStackTrace();
+                            }
+                            cardEffectsTW.setText(oracleText+"\n\n"+flavorText+"\n"+artist+"  "+pt+loyalty);
 
                             //PRINTINGS AND PRICING
                             final String printingsURI=reader.getString("prints_search_uri");
