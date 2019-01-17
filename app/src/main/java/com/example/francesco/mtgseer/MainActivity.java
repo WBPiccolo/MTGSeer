@@ -1,11 +1,14 @@
 package com.example.francesco.mtgseer;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -29,8 +32,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class MainActivity extends AppCompatActivity {
+import static android.provider.AlarmClock.EXTRA_MESSAGE;
 
+public class MainActivity extends AppCompatActivity {
+    public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +44,13 @@ public class MainActivity extends AppCompatActivity {
         final TextView setDataTextView=(TextView) findViewById(R.id.setDataTextView);
         setDataTextView.setMovementMethod(new ScrollingMovementMethod());
         final Context context=getApplicationContext();
+        /// AUTOCOMPLETE TEXTVIEW https://www.tutorialspoint.com/android/android_auto_complete.htm
+        final AutoCompleteTextView actv;
+        actv = (AutoCompleteTextView) findViewById(R.id.autoCompleteTextView1);
+        String[] languages={"Android ","java","IOS","SQL","JDBC","Web services"};
+        ArrayAdapter adapter = new ArrayAdapter(this,android.R.layout.simple_list_item_1,languages);
+        actv.setAdapter(adapter);
+        actv.setThreshold(1);
         ////
         //if Cardname.txt doesn't exit, create it and populate it.
         //Fetch the card list
@@ -110,7 +122,65 @@ public class MainActivity extends AppCompatActivity {
         //Search for a card, returns the name of the card, the most recent expansion and the price
         final Button button = (Button) findViewById(R.id.button);
         final EditText query=(EditText) findViewById(R.id.editTextSearch);
+        //TODO: Visualizzare la lista di carte che rispettano i requisiti, se ce n'è solo una, caricarla direttamente
+        //https://api.scryfall.com/cards/search?q=
         button.setOnClickListener(new View.OnClickListener() {
+                                      public void onClick(View v) {
+                                          Log.d("URLResponse", "Search for \"" + query.getText().toString() + "\"");
+                                          if (!(query.getText().toString().isEmpty())) {
+                                              String cardName = query.getText().toString();
+                                              Log.d("URLResponseCardInput", cardName);
+                                              //Search for the card
+                                              RequestQueue queue = Volley.newRequestQueue(context);
+                                              String url = "https://api.scryfall.com/cards/search?q="+query.getText().toString().replace(" ","+");
+                                              // Request a string response from the provided URL.
+                                              StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                                                      new Response.Listener<String>() {
+                                                          @Override
+                                                          public void onResponse(String response) {
+                                                              try {
+                                                                  JSONObject reader = new JSONObject(response);
+                                                                  int total_cards = Integer.parseInt(reader.getString("total_cards"));
+                                                                  Log.d("URLResponse","Carte trovate:"+ total_cards);
+                                                                  JSONArray data = (JSONArray) reader.get("data");
+                                                                  //TODO: SISTEMARE QUI, BISOGNA FARE UNA CARDVIEW PER OGNI RISULTATO
+                                                                  //TODO: IF total_cards==1, vai direttamente all'activity
+                                                                  if(total_cards==1){
+                                                                      //START NEW ACTIVITY
+                                                                      //Intent intent = new Intent(this, CardViewerActivity.class);
+                                                                      Intent intent=new Intent(getApplicationContext(),CardViewerActivity.class);
+                                                                      String message =data.getJSONObject(0).getString("name");
+                                                                      intent.putExtra(EXTRA_MESSAGE, message);
+                                                                      startActivity(intent);
+                                                                  }//TODO: METTERE UN ELSE
+                                                                  String cards="";
+                                                                  for(int i=0;i<total_cards;i++){
+                                                                      //data.getJSONObject(i);
+                                                                      try {
+                                                                          cards += data.getJSONObject(i).getString("name") + "\n";
+                                                                          Log.d("URLResponseCardName",data.getJSONObject(i).getString("name"));
+                                                                      }catch(JSONException e){
+                                                                          cards += data.getJSONObject(i).getString("set_name") + " : " + "Prezzo non disponibile" + "\n";
+                                                                          Log.d("URLResponseError",e.toString());
+                                                                      }//catch
+                                                                  }//for
+                                                                  setDataTextView.setText(cards);
+                                                              } catch (JSONException e) {
+                                                                  Log.d("URLResponse", e.toString());
+                                                              }
+                                                          }
+                                                      }, new Response.ErrorListener() {
+                                                  @Override
+                                                  public void onErrorResponse(VolleyError error) {
+                                                      Log.d("URLResponse", "That didn't work!");
+                                                  }
+                                              });
+                                              // Add the request to the RequestQueue.
+                                              queue.add(stringRequest);
+                                          }//if
+                                      }//onClick
+                                  });
+        /*button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.d("URLResponse","Search for \""+query.getText().toString()+"\"");
                 if(!(query.getText().toString().isEmpty())){
@@ -120,7 +190,8 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("URLResponseURIFunction",cardURI);
                    // ArrayList<String> rows=uriToPrintings(context,cardURI);
                     mTextView.setText(cardName+"; "+cardURI);*/
-                    //Search for the card
+                   /*
+                   //Search for the card
                     RequestQueue queue = Volley.newRequestQueue(context);
                     String url = "https://api.scryfall.com/cards/named?fuzzy="+query.getText().toString().replace(" ","+");
                     // Request a string response from the provided URL.
@@ -188,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
                     queue.add(stringRequest);
                 }//if
             }//onClick
-        });
+        });*/
     }//onCreate
 
     /**

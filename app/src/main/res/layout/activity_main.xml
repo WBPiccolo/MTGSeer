@@ -36,8 +36,8 @@
 
     <TextView
         android:id="@+id/setDataTextView"
-        android:layout_width="320dp"
-        android:layout_height="356dp"
+        android:layout_width="332dp"
+        android:layout_height="221dp"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="8dp"
@@ -46,7 +46,6 @@
         android:scrollbars="vertical"
         android:text=""
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.4"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/cardNameTextView"
         tools:ignore="UnknownId" />
@@ -65,4 +64,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextSearch" />
 
+    <AutoCompleteTextView
+        android:id="@+id/autoCompleteTextView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:ems="10"
+        tools:layout_editor_absoluteX="85dp"
+        tools:layout_editor_absoluteY="157dp" />
 </android.support.constraint.ConstraintLayout>
