@@ -147,24 +147,26 @@ public class MainActivity extends AppCompatActivity {
                                                                   //TODO: IF total_cards==1, vai direttamente all'activity
                                                                   if(total_cards==1){
                                                                       //START NEW ACTIVITY
-                                                                      //Intent intent = new Intent(this, CardViewerActivity.class);
                                                                       Intent intent=new Intent(getApplicationContext(),CardViewerActivity.class);
-                                                                      String message =data.getJSONObject(0).getString("name");
-                                                                      intent.putExtra(EXTRA_MESSAGE, message);
+                                                                      String cardID =data.getJSONObject(0).getString("id");
+                                                                      Log.d("URLResponseID",cardID);
+                                                                      intent.putExtra(EXTRA_MESSAGE, cardID);
                                                                       startActivity(intent);
                                                                   }//TODO: METTERE UN ELSE
-                                                                  String cards="";
-                                                                  for(int i=0;i<total_cards;i++){
-                                                                      //data.getJSONObject(i);
-                                                                      try {
-                                                                          cards += data.getJSONObject(i).getString("name") + "\n";
-                                                                          Log.d("URLResponseCardName",data.getJSONObject(i).getString("name"));
-                                                                      }catch(JSONException e){
-                                                                          cards += data.getJSONObject(i).getString("set_name") + " : " + "Prezzo non disponibile" + "\n";
-                                                                          Log.d("URLResponseError",e.toString());
-                                                                      }//catch
-                                                                  }//for
-                                                                  setDataTextView.setText(cards);
+                                                                  else {
+                                                                      String cards = "";
+                                                                      for (int i = 0; i < total_cards; i++) {
+                                                                          //data.getJSONObject(i);
+                                                                          try {
+                                                                              cards += data.getJSONObject(i).getString("name") + "\n";
+                                                                              Log.d("URLResponseCardName", data.getJSONObject(i).getString("name"));
+                                                                          } catch (JSONException e) {
+                                                                              cards += data.getJSONObject(i).getString("set_name") + " : " + "Prezzo non disponibile" + "\n";
+                                                                              Log.d("URLResponseError", e.toString());
+                                                                          }//catch
+                                                                      }//for
+                                                                      setDataTextView.setText(cards);
+                                                                  }//else
                                                               } catch (JSONException e) {
                                                                   Log.d("URLResponse", e.toString());
                                                               }
