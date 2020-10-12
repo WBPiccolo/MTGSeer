@@ -272,3 +272,62 @@ public class MainActivity extends AppCompatActivity {
         return rows;
     }//uriToPrintings
 }//MainActivity
+
+
+
+def vgg_block(layer_in, n_filters, n_conv, conv_kernel = (3, 3),
+                            pool_kernel = (2, 2), strides = (2, 2), 
+                            conv_padding = 'same', dropout = 0.2):
+        
+    # add convolutional layers
+    for _ in range(n_conv):
+        layer_in = tf.keras.layers.Conv2D(n_filters, conv_kernel, 
+                                      padding = conv_padding, activation = 'relu')(layer_in)
+        #layer_in =  tf.keras.layers.Dropout(dropout)(layer_in)
+        layer_in = tf.keras.layers.BatchNormalization()(layer_in)
+    # add max pooling layer
+    layer_in = tf.keras.layers.Dropout(dropout)(layer_in)
+    layer_in = tf.keras.layers.BatchNormalization()(layer_in)
+    layer_in = tf.keras.layers.MaxPooling2D(pool_kernel, strides = strides)(layer_in)
+    return layer_in
+
+
+# define model input
+visible = tf.keras.Input(shape = (rows, cols, channels))
+# add vgg module
+layer = vgg_block(visible, n_filters = 64, n_conv = 4,
+                  conv_kernel = (4, 4), pool_kernel = (2, 2), dropout = 0.1)
+# add vgg module
+layer = vgg_block(layer, n_filters = 32, n_conv = 3,
+                  conv_kernel = (3, 3), pool_kernel = (2, 2), dropout = 0.1)
+# add vgg module
+layer = vgg_block(layer, n_filters = 32, n_conv = 3,
+                  conv_kernel = (3, 3), pool_kernel = (2, 2), dropout = 0.1)
+# add vgg module
+layer = vgg_block(layer, n_filters = 16, n_conv = 2,
+                  conv_kernel = (2, 2), pool_kernel = (2, 2), dropout = 0.1)
+
+
+
+# output
+layer = tf.keras.layers.Flatten()(layer)
+#layer = tf.keras.layers.BatchNormalization()(layer)
+#layer = tf.keras.layers.Dense(1856, activation = 'elu')(layer)
+#layer = tf.keras.layers.Dense(928, activation = 'relu')(layer)
+#layer =  tf.keras.layers.Dropout((0.5))(layer)
+layer = tf.keras.layers.BatchNormalization()(layer)
+layer = tf.keras.layers.Dense(16 * 5, activation = 'relu')(layer)
+layer = tf.keras.layers.Dense(16 * 5, activation = 'softmax')(layer)
+outputs = tf.keras.layers.Reshape((16, 5))(layer)
+#outputs = tf.keras.layers.LSTM(16, activation = 'softmax', input_shape = (1, 1))(outputs)
+#outputs = tf.keras.layers.Reshape((158, 5, 1))(outputs)
+#outputs = tf.keras.layers.Conv2D(1, (3, 3), padding = 'same', activation = 'sigmoid')(outputs)
+
+
+# create model 
+model = tf.keras.Model(inputs = visible, outputs = outputs)
+
+# summarize model
+model.summary()
+# plot model architecture
+#plot_model(model, show_shapes=True, to_file='multiple_vgg_blocks.png')
